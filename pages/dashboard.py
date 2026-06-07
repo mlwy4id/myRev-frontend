@@ -6,15 +6,29 @@ from utils.api import api_get
 
 st.title("📊 Dashboard Analitik")
 
+if "dashboard_kategori" not in st.session_state:
+    try:
+        raw = api_get("/api/v1/sales/categories")
+        if raw and isinstance(raw[0], dict):
+            st.session_state.dashboard_kategori = ["Semua"] + [c["nama"] for c in raw]
+        else:
+            st.session_state.dashboard_kategori = ["Semua"] + list(raw)
+    except Exception:
+        st.session_state.dashboard_kategori = ["Semua"]
+kategori_list = st.session_state.dashboard_kategori
+
 with st.sidebar:
     st.subheader("Filter")
     tahun = st.number_input("Tahun", min_value=2020, max_value=date.today().year, value=date.today().year, step=1)
     bulan = st.selectbox("Bulan", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                          format_func=lambda x: "Semua" if x == 0 else date(2000, x, 1).strftime("%B"))
+    kategori = st.selectbox("Kategori", kategori_list)
 
 params = {"tahun": tahun}
 if bulan:
     params["bulan"] = bulan
+if kategori != "Semua":
+    params["kategori"] = kategori
 
 try:
     with st.spinner("Memuat data analitik..."):
@@ -49,7 +63,7 @@ else:
 if analytics.get("trend_harian"):
     df_trend = pd.DataFrame(analytics["trend_harian"])
     chart_trend = alt.Chart(df_trend).mark_line(point=True).encode(
-        x=alt.X("tanggal:T", title="Tanggal"),
+        x=alt.X("tanggal:T", title="Tanggal", axis=alt.Axis(format="%Y-%m-%d")),
         y=alt.Y("total_pendapatan:Q", title="Pendapatan (Rp)"),
         tooltip=["tanggal", "total_pendapatan"]
     ).properties(title="Trend Pendapatan Harian", height=300)

@@ -23,9 +23,16 @@ def api_get(path: str, params: dict = None):
 
 def api_post(path: str, data: dict = None, files=None):
     if files:
+        print(f"Body: {data}")
         resp = requests.post(f"{BACKEND_URL}{path}", files=files)
+
     else:
         resp = requests.post(f"{BACKEND_URL}{path}", json=data)
+    return _handle_response(resp)
+
+
+def api_put(path: str, data: dict = None):
+    resp = requests.put(f"{BACKEND_URL}{path}", json=data)
     return _handle_response(resp)
 
 
