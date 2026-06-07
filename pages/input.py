@@ -147,7 +147,7 @@ if col_submit.button("💾  Simpan Semua", type="primary", width="stretch"):
 st.divider()
 st.subheader("10 Transaksi Terbaru")
 try:
-    data = api_get("/api/v1/sales", params={"page": 1, "size": 20})
+    data = api_get("/api/v1/sales", params={"page": 1, "page_size": 20})
     if data:
         df = pd.DataFrame(data)[
             [

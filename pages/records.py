@@ -56,13 +56,18 @@ with st.sidebar:
         "Bulan", options=list(BULAN.keys()), format_func=lambda x: BULAN[x]
     )
     kategori = st.selectbox("Kategori", KATEGORI)
-    size = st.selectbox("Tampilkan", [10, 25, 50, 100, 250], index=3)
+    nama_item = st.text_input("Nama Item")
+    tanggal_dari = st.date_input("Tanggal Dari", value=None)
+    tanggal_sampai = st.date_input("Tanggal Sampai", value=None)
+    page_size = st.selectbox("Per Halaman", [10, 25, 50, 100, 200], index=3)
 
     export_params = {}
     if bulan:
         export_params["bulan"] = bulan
     if kategori != "Semua":
         export_params["kategori"] = kategori
+    if nama_item:
+        export_params["nama_item"] = nama_item
     try:
         headers = {}
         token = st.session_state.get("token", "")
@@ -81,16 +86,22 @@ with st.sidebar:
         pass
 
 # Reset page when filters change
-current_filter = f"{bulan}_{kategori}_{size}"
+current_filter = f"{bulan}_{kategori}_{nama_item}_{tanggal_dari}_{tanggal_sampai}_{page_size}"
 if current_filter != st.session_state.filter_key:
     st.session_state.filter_key = current_filter
     st.session_state.page = 1
 
-params = {"page": st.session_state.page, "size": size}
+params = {"page": st.session_state.page, "page_size": page_size}
 if bulan:
     params["bulan"] = bulan
 if kategori != "Semua":
     params["kategori"] = kategori
+if nama_item:
+    params["nama_item"] = nama_item
+if tanggal_dari:
+    params["tanggal_dari"] = str(tanggal_dari)
+if tanggal_sampai:
+    params["tanggal_sampai"] = str(tanggal_sampai)
 
 try:
     with st.spinner("Memuat data..."):
@@ -209,6 +220,6 @@ pc2.markdown(
     f"<div style='text-align:center;padding-top:8px'><b>Halaman {st.session_state.page}</b></div>",
     unsafe_allow_html=True,
 )
-if pc3.button("Berikutnya ➡", disabled=len(data) < size, width="stretch"):
+if pc3.button("Berikutnya ➡", disabled=len(data) < page_size, width="stretch"):
     st.session_state.page += 1
     st.rerun()
