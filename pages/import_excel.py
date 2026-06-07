@@ -1,13 +1,21 @@
-import streamlit as st
+import os
+
 import pandas as pd
 import requests
-import os
+import streamlit as st
 from dotenv import load_dotenv
 
 load_dotenv()
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
-REQUIRED_COLS = {"tanggal", "bulan", "nama_item", "kategori", "quantity", "harga_satuan"}
+REQUIRED_COLS = {
+    "tanggal",
+    "bulan",
+    "nama_item",
+    "kategori",
+    "quantity",
+    "harga_satuan",
+}
 
 st.title("📂 Import Excel / CSV")
 
@@ -20,14 +28,20 @@ uploaded = st.file_uploader("Pilih file", type=["xlsx", "csv"])
 
 if uploaded:
     try:
-        df = pd.read_excel(uploaded) if uploaded.name.endswith(".xlsx") else pd.read_csv(uploaded)
+        df = (
+            pd.read_excel(uploaded)
+            if uploaded.name.endswith(".xlsx")
+            else pd.read_csv(uploaded)
+        )
     except Exception as e:
         st.error(f"Gagal membaca file: {e}")
         st.stop()
 
     missing = REQUIRED_COLS - set(df.columns.str.lower())
     if missing:
-        st.error(f"Kolom tidak lengkap. Kolom yang kurang: **{', '.join(sorted(missing))}**")
+        st.error(
+            f"Kolom tidak lengkap. Kolom yang kurang: **{', '.join(sorted(missing))}**"
+        )
         st.stop()
 
     df.columns = df.columns.str.lower()
@@ -40,14 +54,16 @@ if uploaded:
         try:
             with st.spinner("Mengimport data..."):
                 resp = requests.post(
-                    f"{BACKEND_URL}/sales/bulk",
+                    f"{BACKEND_URL}/api/v1/sales/import",
                     headers={"Authorization": f"Bearer {token}"},
                     files={"file": (uploaded.name, uploaded, uploaded.type)},
                 )
             resp.raise_for_status()
             result = resp.json()
-            st.success(f"Import selesai: **{result.get('imported', '?')}** record berhasil disimpan.")
+            st.success(
+                f"Import selesai: **{result.get('imported', '?')}** record berhasil disimpan."
+            )
         except requests.HTTPError as e:
-            st.error(f"Import gagal: {e.response.text}")
+            st.error(f"Import gagal: {e}")
         except Exception as e:
             st.error(f"Tidak dapat terhubung ke server: {e}")

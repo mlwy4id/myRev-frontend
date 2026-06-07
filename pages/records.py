@@ -20,7 +20,7 @@ if kategori != "Semua":
 
 try:
     with st.spinner("Memuat data..."):
-        data = api_get("/sales", params=params)
+        data = api_get("/api/v1/sales", params=params)
 except Exception as e:
     st.error(f"Tidak dapat terhubung ke server: {e}")
     st.stop()

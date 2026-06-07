@@ -5,26 +5,59 @@ import streamlit as st
 
 from utils.api import api_get, api_post
 
-KATEGORI = ["Makanan", "Minuman", "Elektronik", "Pakaian", "Lainnya"]
+BASE_KATEGORI = ["Makanan", "Minuman", "Elektronik", "Pakaian"]
 
 st.title("✏️ Input Manual")
 
 # Init batch list
 if "batch" not in st.session_state:
     st.session_state.batch = [{}]
+if "custom_kategori" not in st.session_state:
+    st.session_state.custom_kategori = []
+
+
+def all_kategori():
+    return BASE_KATEGORI + sorted(st.session_state.custom_kategori)
 
 
 def empty_row():
     return {
         "tanggal": date.today(),
         "nama_item": "",
-        "kategori": KATEGORI[0],
+        "kategori": BASE_KATEGORI[0],
         "quantity": 1,
         "harga_satuan": 0,
     }
 
 
+# Custom kategori management
+with st.expander("Kelola Kategori", expanded=False):
+    cc1, cc2 = st.columns([3, 1])
+    new_kat = cc1.text_input(
+        "Tambah kategori baru",
+        key="new_kategori_input",
+        label_visibility="collapsed",
+        placeholder="Nama kategori baru...",
+    )
+    if cc2.button("Tambah", use_container_width=True) and new_kat.strip():
+        if new_kat.strip() not in all_kategori():
+            st.session_state.custom_kategori.append(new_kat.strip())
+            st.rerun()
+        else:
+            st.warning("Kategori sudah ada.")
+    if st.session_state.custom_kategori:
+        st.write("Kategori khusus:")
+        for j, k in enumerate(st.session_state.custom_kategori):
+            if st.button(f"Hapus {k}", key=f"hapus_kat_{j}"):
+                st.session_state.custom_kategori.pop(j)
+                # Reset baris yang pakai kategori ini ke default
+                for r in st.session_state.batch:
+                    if r["kategori"] == k:
+                        r["kategori"] = BASE_KATEGORI[0]
+                st.rerun()
+
 # Header kolom
+kats = all_kategori()
 cols = st.columns([1.5, 2, 1.5, 1, 1.5, 1.5, 0.5])
 for label, col in zip(
     ["Tanggal", "Nama Item", "Kategori", "Qty", "Harga Satuan", "Total", ""], cols
@@ -47,10 +80,12 @@ for i in range(len(st.session_state.batch)):
         key=f"item_{i}",
         label_visibility="collapsed",
     )
+    current_kat = row.get("kategori", BASE_KATEGORI[0])
+    kat_index = kats.index(current_kat) if current_kat in kats else 0
     row["kategori"] = c3.selectbox(
         "",
-        KATEGORI,
-        index=KATEGORI.index(row.get("kategori", KATEGORI[0])),
+        kats,
+        index=kat_index,
         key=f"kat_{i}",
         label_visibility="collapsed",
     )
@@ -97,7 +132,7 @@ if col_submit.button("💾  Simpan Semua", type="primary", use_container_width=T
         try:
             for r in st.session_state.batch:
                 api_post(
-                    "/sales",
+                    "/api/v1/sales",
                     {
                         "tanggal": str(r["tanggal"]),
                         "bulan": r["tanggal"].month,
@@ -116,7 +151,7 @@ if col_submit.button("💾  Simpan Semua", type="primary", use_container_width=T
 st.divider()
 st.subheader("10 Transaksi Terbaru")
 try:
-    data = api_get("/sales", params={"limit": 10})
+    data = api_get("/api/v1/sales", params={"page": 1, "size": 20})
     if data:
         df = pd.DataFrame(data)[
             [

@@ -18,7 +18,7 @@ if bulan:
 
 try:
     with st.spinner("Memuat data analitik..."):
-        analytics = api_get("/sales/analytics", params=params)
+        analytics = api_get("/api/v1/sales/analytics", params=params)
 except Exception as e:
     st.error(f"Tidak dapat terhubung ke server: {e}")
     st.stop()
