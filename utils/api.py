@@ -16,26 +16,31 @@ def _handle_response(resp):
     return resp.json()
 
 
+def _headers():
+    token = st.session_state.get("token", "")
+    if token:
+        return {"Authorization": f"Bearer {token}"}
+    return {}
+
+
 def api_get(path: str, params: dict = None):
-    resp = requests.get(f"{BACKEND_URL}{path}", params=params)
+    resp = requests.get(f"{BACKEND_URL}{path}", params=params, headers=_headers())
     return _handle_response(resp)
 
 
 def api_post(path: str, data: dict = None, files=None):
     if files:
-        print(f"Body: {data}")
-        resp = requests.post(f"{BACKEND_URL}{path}", files=files)
-
+        resp = requests.post(f"{BACKEND_URL}{path}", files=files, headers=_headers())
     else:
-        resp = requests.post(f"{BACKEND_URL}{path}", json=data)
+        resp = requests.post(f"{BACKEND_URL}{path}", json=data, headers=_headers())
     return _handle_response(resp)
 
 
 def api_put(path: str, data: dict = None):
-    resp = requests.put(f"{BACKEND_URL}{path}", json=data)
+    resp = requests.put(f"{BACKEND_URL}{path}", json=data, headers=_headers())
     return _handle_response(resp)
 
 
 def api_delete(path: str):
-    resp = requests.delete(f"{BACKEND_URL}{path}")
+    resp = requests.delete(f"{BACKEND_URL}{path}", headers=_headers())
     return _handle_response(resp)
