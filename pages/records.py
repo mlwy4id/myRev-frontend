@@ -1,8 +1,14 @@
+import os
 from datetime import date
 
+import requests
 import streamlit as st
+from dotenv import load_dotenv
 
 from utils.api import api_delete, api_get, api_put
+
+load_dotenv()
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000").rstrip("/")
 
 if "records_kategori" not in st.session_state:
     try:
@@ -51,6 +57,28 @@ with st.sidebar:
     )
     kategori = st.selectbox("Kategori", KATEGORI)
     size = st.selectbox("Tampilkan", [10, 25, 50, 100, 250], index=3)
+
+    export_params = {}
+    if bulan:
+        export_params["bulan"] = bulan
+    if kategori != "Semua":
+        export_params["kategori"] = kategori
+    try:
+        headers = {}
+        token = st.session_state.get("token", "")
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        resp = requests.get(f"{BACKEND_URL}/api/v1/files/export", params=export_params, headers=headers, stream=True)
+        resp.raise_for_status()
+        st.download_button(
+            "📥 Export XLSX",
+            data=resp.content,
+            file_name="data_penjualan.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            width="stretch",
+        )
+    except Exception:
+        pass
 
 # Reset page when filters change
 current_filter = f"{bulan}_{kategori}_{size}"
@@ -167,6 +195,8 @@ for item in data:
             ):
                 st.session_state.edit_id = None
                 st.rerun()
+
+st.divider()
 
 # Pagination
 pc1, pc2, pc3 = st.columns([2, 1, 2])
